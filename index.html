@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital Patient Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            background-color: #005288;
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+        }
+        h1 {
+            margin: 0;
+        }
+        .search-bar, .add-patient-form {
+            margin: 20px 0;
+        }
+        #searchInput, .add-patient-form input, .add-patient-form select {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        .cubicle-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .cubicle-button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            color: white;
+            margin-bottom: 10px;
+        }
+        .cubicle-button.all { background-color: #005288; }
+        .cubicle-button.red { background-color: #FF4136; }
+        .cubicle-button.orange { background-color: #FF851B; }
+        .cubicle-button.yellow { background-color: #FFDC00; color: black; }
+        .cubicle-button.green { background-color: #2ECC40; }
+        .cubicle-button.infectious { background-color: #B10DC9; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #005288;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .call-button, #addPatientBtn {
+            padding: 5px 10px;
+            background-color: #0074D9;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        #addPatientBtn {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Hospital Patient Tracker</h1>
+    </header>
+    <div class="container">
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="Search for patients...">
+        </div>
+        <div class="cubicle-buttons">
+            <button class="cubicle-button all" onclick="filterPatients('All')">All Cubicles</button>
+            <button class="cubicle-button red" onclick="filterPatients('Red')">Red Cubicle</button>
+            <button class="cubicle-button orange" onclick="filterPatients('Orange')">Orange Cubicle</button>
+            <button class="cubicle-button yellow" onclick="filterPatients('Yellow')">Yellow Cubicle</button>
+            <button class="cubicle-button green" onclick="filterPatients('Green')">Green Cubicle</button>
+            <button class="cubicle-button infectious" onclick="filterPatients('Infectious')">Infectious Cubicle</button>
+        </div>
+        <div class="add-patient-form">
+            <input type="text" id="patientName" placeholder="Patient Name">
+            <input type="text" id="patientCondition" placeholder="Patient Condition">
+            <select id="patientCubicle">
+                <option value="Red">Red Cubicle</option>
+                <option value="Orange">Orange Cubicle</option>
+                <option value="Yellow">Yellow Cubicle</option>
+                <option value="Green">Green Cubicle</option>
+                <option value="Infectious">Infectious Cubicle</option>
+            </select>
+            <input type="number" id="cubicleNumber" placeholder="Cubicle Number" min="1">
+            <button id="addPatientBtn" onclick="addPatient()">Add Patient</button>
+        </div>
+        <table id="patientTable">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Condition</th>
+                    <th>Cubicle</th>
+                    <th>Cubicle Number</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="patientTableBody"></tbody>
+        </table>
+    </div>
+
+    <script>
+        // Sample patient data
+        let patients = [
+            { name: "John Doe", condition: "Fever", cubicle: "Yellow", cubicleNumber: 1 },
+            { name: "Jane Smith", condition: "Broken Arm", cubicle: "Green", cubicleNumber: 2 },
+            { name: "Bob Johnson", condition: "COVID-19", cubicle: "Infectious", cubicleNumber: 3 },
+            { name: "Alice Brown", condition: "Heart Attack", cubicle: "Red", cubicleNumber: 4 },
+            { name: "Charlie Davis", condition: "Allergic Reaction", cubicle: "Orange", cubicleNumber: 5 },
+            { name: "Eva Wilson", condition: "Pneumonia", cubicle: "Yellow", cubicleNumber: 6 },
+            { name: "Frank Miller", condition: "Appendicitis", cubicle: "Red", cubicleNumber: 7 },
+            { name: "Grace Lee", condition: "Migraine", cubicle: "Green", cubicleNumber: 8 },
+            { name: "Henry Taylor", condition: "Fracture", cubicle: "Orange", cubicleNumber: 9 },
+            { name: "Ivy Chen", condition: "Influenza", cubicle: "Infectious", cubicleNumber: 10 },
+            { name: "Jack Roberts", condition: "Asthma Attack", cubicle: "Yellow", cubicleNumber: 11 },
+            { name: "Karen White", condition: "Stroke", cubicle: "Red", cubicleNumber: 12 },
+            { name: "Liam Brown", condition: "Food Poisoning", cubicle: "Green", cubicleNumber: 13 },
+            { name: "Mia Johnson", condition: "Burns", cubicle: "Orange", cubicleNumber: 14 },
+            { name: "Noah Garcia", condition: "Severe Infection", cubicle: "Infectious", cubicleNumber: 15 }
+        ];
+
+        function renderPatients(patientsToRender) {
+            const tableBody = document.getElementById('patientTableBody');
+            tableBody.innerHTML = '';
+            patientsToRender.forEach(patient => {
+                const row = tableBody.insertRow();
+                row.insertCell(0).textContent = patient.name;
+                row.insertCell(1).textContent = patient.condition;
+                row.insertCell(2).textContent = patient.cubicle;
+                row.insertCell(3).textContent = patient.cubicleNumber;
+                const callButton = document.createElement('button');
+                callButton.textContent = 'Call Patient';
+                callButton.className = 'call-button';
+                callButton.onclick = () => callPatient(patient.name, patient.cubicle, patient.cubicleNumber);
+                row.insertCell(4).appendChild(callButton);
+            });
+        }
+
+        function filterPatients(cubicle) {
+            let filteredPatients;
+            if (cubicle === 'All') {
+                filteredPatients = patients;
+            } else {
+                filteredPatients = patients.filter(patient => patient.cubicle === cubicle);
+            }
+            renderPatients(filteredPatients);
+        }
+
+        function searchPatients() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const filteredPatients = patients.filter(patient => 
+                patient.name.toLowerCase().includes(searchTerm) || 
+                patient.condition.toLowerCase().includes(searchTerm) ||
+                patient.cubicleNumber.toString().includes(searchTerm)
+            );
+            renderPatients(filteredPatients);
+        }
+
+        function callPatient(name, cubicle, cubicleNumber) {
+            alert(`Calling ${name} in ${cubicle} cubicle, number ${cubicleNumber}`);
+        }
+
+        function addPatient() {
+            const name = document.getElementById('patientName').value;
+            const condition = document.getElementById('patientCondition').value;
+            const cubicle = document.getElementById('patientCubicle').value;
+            const cubicleNumber = parseInt(document.getElementById('cubicleNumber').value);
+
+            if (name && condition && cubicle && cubicleNumber) {
+                patients.push({ name, condition, cubicle, cubicleNumber });
+                renderPatients(patients);
+                // Clear input fields
+                document.getElementById('patientName').value = '';
+                document.getElementById('patientCondition').value = '';
+                document.getElementById('patientCubicle').value = 'Red';
+                document.getElementById('cubicleNumber').value = '';
+            } else {
+                alert('Please fill in all fields');
+            }
+        }
+
+        // Initial render
+        renderPatients(patients);
+
+        // Add event listener for search
+        document.getElementById('searchInput').addEventListener('input', searchPatients);
+    </script>
+</body>
+</html>
